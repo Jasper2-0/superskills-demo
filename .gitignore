@@ -1,0 +1,5 @@
+backend/data/*.sqlite
+backend/data/*.sqlite-journal
+backend/vendor/
+node_modules/
+.DS_Store
