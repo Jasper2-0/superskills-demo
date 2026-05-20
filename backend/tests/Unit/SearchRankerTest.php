@@ -45,4 +45,44 @@ final class SearchRankerTest extends TestCase
         $ranked = $this->ranker->rank([$only], []);
         self::assertSame(0.0, $ranked[0]['score']);
     }
+
+    public function testSingleTokenTitleMatchScoresFive(): void
+    {
+        $s = $this->make(1, title: 'PHPUnit setup');
+        $ranked = $this->ranker->rank([$s], ['phpunit']);
+        self::assertSame(1, $ranked[0]['snippet']->id);
+        // 5.0 (title) + 2.0 (whole-word) + tiny recency contribution
+        self::assertEqualsWithDelta(7.0, $ranked[0]['score'], 0.1);
+    }
+
+    public function testSingleTokenTagExactMatchScoresFour(): void
+    {
+        $s = $this->make(1, title: 'untitled', body: 'nope', tags: ['php']);
+        $ranked = $this->ranker->rank([$s], ['php']);
+        self::assertEqualsWithDelta(4.0, $ranked[0]['score'], 0.1);
+    }
+
+    public function testSingleTokenTagSubstringMatchScoresOneFive(): void
+    {
+        $s = $this->make(1, title: 'untitled', body: 'nope', tags: ['phpunit-config']);
+        $ranked = $this->ranker->rank([$s], ['php']);
+        self::assertEqualsWithDelta(1.5, $ranked[0]['score'], 0.1);
+    }
+
+    public function testSingleTokenBodyMatchScoresOnePerUniqueLine(): void
+    {
+        $body = "foo()\nbar()\nfoo()\nfoo()"; // 3 occurrences but only 1 unique line
+        $s = $this->make(1, title: 'untitled', body: $body, tags: []);
+        $ranked = $this->ranker->rank([$s], ['foo']);
+        self::assertEqualsWithDelta(1.0, $ranked[0]['score'], 0.1);
+    }
+
+    public function testBodyScoreSumsAcrossDistinctMatchingLines(): void
+    {
+        $body = "alpha foo\nbeta foo\nno match here";
+        $s = $this->make(1, title: 'untitled', body: $body, tags: []);
+        $ranked = $this->ranker->rank([$s], ['foo']);
+        // Two distinct lines contain "foo"
+        self::assertEqualsWithDelta(2.0, $ranked[0]['score'], 0.1);
+    }
 }
