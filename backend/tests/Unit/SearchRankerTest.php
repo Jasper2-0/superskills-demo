@@ -85,4 +85,37 @@ final class SearchRankerTest extends TestCase
         // Two distinct lines contain "foo"
         self::assertEqualsWithDelta(2.0, $ranked[0]['score'], 0.1);
     }
+
+    public function testMultiTokenAllPresentScoresSumOfContributions(): void
+    {
+        $s = $this->make(1, title: 'phpunit testing setup', body: 'install phpunit and run');
+        $ranked = $this->ranker->rank([$s], ['phpunit', 'setup']);
+        self::assertCount(1, $ranked);
+        // Each token contributes: title 5+2=7 for whole-word matches; body adds 1 for phpunit line
+        // phpunit token: title 5+2 + body 1 = 8
+        // setup token: title 5+2 = 7
+        // Total = 15 (+ tiny recency)
+        self::assertGreaterThan(14.0, $ranked[0]['score']);
+        self::assertLessThan(16.0, $ranked[0]['score']);
+    }
+
+    public function testMissingTokenExcludesSnippet(): void
+    {
+        $hasOne = $this->make(1, title: 'phpunit setup', body: 'install', tags: []);
+        $hasBoth = $this->make(2, title: 'phpunit setup', body: 'composer install phpunit', tags: ['composer']);
+
+        $ranked = $this->ranker->rank([$hasOne, $hasBoth], ['phpunit', 'composer']);
+
+        self::assertCount(1, $ranked);
+        self::assertSame(2, $ranked[0]['snippet']->id);
+    }
+
+    public function testRanksHigherScoresFirst(): void
+    {
+        $weak = $this->make(1, title: 'foo bar baz', body: 'nothing else');           // title hit only
+        $strong = $this->make(2, title: 'foo', body: "foo\nfoo other", tags: ['foo']); // exact tag + title + body
+
+        $ranked = $this->ranker->rank([$weak, $strong], ['foo']);
+        self::assertSame([2, 1], array_map(fn ($r) => $r['snippet']->id, $ranked));
+    }
 }
