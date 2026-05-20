@@ -31,6 +31,9 @@ abstract class IntegrationCase extends TestCase
         if (!is_resource($this->process)) {
             self::fail('Failed to start php -S');
         }
+        foreach ($pipes as $pipe) {
+            fclose($pipe);
+        }
 
         $deadline = microtime(true) + 5.0;
         while (microtime(true) < $deadline) {
