@@ -1,15 +1,22 @@
 <?php
 declare(strict_types=1);
 
-// Static-file fallthrough: PHP's built-in dev server handles non-API paths.
+require dirname(__DIR__) . '/vendor/autoload.php';
+
+use App\Database;
+use App\Http\Controllers\LanguagesController;
+use App\Http\JsonResponse;
+use App\Http\Router;
+
 $path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
+
+// Static-file fallthrough for non-API paths.
 if (!str_starts_with($path, '/api/')) {
-    $docRoot = __DIR__;
-    $candidate = $docRoot . $path;
-    if ($path !== '/' && is_file($candidate)) {
-        return false; // let PHP serve the static file
+    $publicCandidate = __DIR__ . $path;
+    if ($path !== '/' && is_file($publicCandidate)) {
+        return false; // serve from public/ via built-in server
     }
-    // Default: serve the SPA shell (path-traversal-safe via realpath check).
+    // Frontend-folder lookup with path-traversal protection (from Task 1 review).
     $frontendRoot = realpath(dirname(__DIR__, 2) . '/frontend');
     $requested    = $path === '/' ? '/index.html' : $path;
     $resolved     = $frontendRoot !== false ? realpath($frontendRoot . $requested) : false;
@@ -30,12 +37,19 @@ if (!str_starts_with($path, '/api/')) {
     return true;
 }
 
-// Temporary health endpoint — real router wired in Task 21.
-header('Content-Type: application/json');
-if ($path === '/api/health') {
-    echo json_encode(['status' => 'ok']);
-    return true;
+// API dispatch.
+$dbPath = $_ENV['SNIPPET_DB'] ?? dirname(__DIR__) . '/data/snippets.sqlite';
+$db = new Database($dbPath);
+$db->migrate();
+$pdo = $db->pdo();
+
+$router = new Router();
+$router->get('/api/health', fn () => JsonResponse::ok(['status' => 'ok']));
+$router->get('/api/languages', fn () => (new LanguagesController())->index());
+
+try {
+    $router->dispatch($_SERVER['REQUEST_METHOD'] ?? 'GET', $path);
+} catch (\RuntimeException $e) {
+    JsonResponse::error($e->getMessage(), $e->getCode() ?: 500);
 }
-http_response_code(404);
-echo json_encode(['error' => 'Not Found']);
 return true;
