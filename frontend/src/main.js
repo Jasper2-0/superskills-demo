@@ -23,8 +23,12 @@ const handlers = {
   onEdit(snippet) { store.update({ editing: { ...snippet } }); },
   async onDelete(snippet) {
     if (!confirm(`Delete "${snippet.title}"?`)) return;
-    await api.deleteSnippet(snippet.id);
-    await refreshNow();
+    try {
+      await api.deleteSnippet(snippet.id);
+      await refreshNow();
+    } catch (e) {
+      alert(e.message);
+    }
   },
   onCancel() { store.update({ editing: null }); },
   async onSave(payload) {
