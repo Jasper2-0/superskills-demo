@@ -118,4 +118,43 @@ final class SearchRankerTest extends TestCase
         $ranked = $this->ranker->rank([$weak, $strong], ['foo']);
         self::assertSame([2, 1], array_map(fn ($r) => $r['snippet']->id, $ranked));
     }
+
+    public function testTitleWholeWordOutranksTitleSubstring(): void
+    {
+        $whole = $this->make(1, title: 'foo example');
+        $partial = $this->make(2, title: 'foobar example');
+
+        $ranked = $this->ranker->rank([$partial, $whole], ['foo']);
+        self::assertSame([1, 2], array_map(fn ($r) => $r['snippet']->id, $ranked));
+    }
+
+    public function testRecencyOnlyBreaksTiesNeverFlipsRealRankings(): void
+    {
+        // Identical scoring content, different updated_at → newer wins
+        $older = $this->make(1, title: 'foo', updatedAt: '2026-05-01T00:00:00Z');
+        $newer = $this->make(2, title: 'foo', updatedAt: '2026-05-20T00:00:00Z');
+
+        $ranked = $this->ranker->rank([$older, $newer], ['foo']);
+        self::assertSame([2, 1], array_map(fn ($r) => $r['snippet']->id, $ranked));
+
+        // But recency must never beat a real scoring difference.
+        // weakOldest has lower base score than strongOldest, so newer-but-weak shouldn't win.
+        $weakNew = $this->make(3, title: 'no match here, foobar mentions', body: 'foo bar baz', updatedAt: '2030-01-01T00:00:00Z');
+        $strongOld = $this->make(4, title: 'foo', tags: ['foo'], body: 'foo', updatedAt: '2020-01-01T00:00:00Z');
+        $ranked2 = $this->ranker->rank([$weakNew, $strongOld], ['foo']);
+        self::assertSame(4, $ranked2[0]['snippet']->id, 'Recency tiebreak must not outrank a real scoring difference');
+    }
+
+    public function testTwoHundredIdenticalMatchingLinesScoreSameAsOne(): void
+    {
+        $line = 'console.log(target)';
+        $oneLine = $this->make(1, title: 'small', body: $line);
+        $manyLines = $this->make(2, title: 'spammed', body: implode("\n", array_fill(0, 200, $line)));
+
+        $rankedOne = $this->ranker->rank([$oneLine], ['target']);
+        $rankedMany = $this->ranker->rank([$manyLines], ['target']);
+
+        // Both score 1.0 from the body contribution (titles don't match)
+        self::assertEqualsWithDelta($rankedOne[0]['score'], $rankedMany[0]['score'], 0.001);
+    }
 }
