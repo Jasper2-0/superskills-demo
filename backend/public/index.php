@@ -42,7 +42,7 @@ if (!str_starts_with($path, '/api/')) {
     return true;
 }
 
-$dbPath = $_ENV['SNIPPET_DB'] ?? dirname(__DIR__) . '/data/snippets.sqlite';
+$dbPath = getenv('SNIPPET_DB') ?: dirname(__DIR__) . '/data/snippets.sqlite';
 $db = new Database($dbPath);
 $db->migrate();
 $pdo = $db->pdo();
