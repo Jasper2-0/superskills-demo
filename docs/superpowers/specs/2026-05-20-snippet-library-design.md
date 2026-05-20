@@ -164,7 +164,7 @@ The only piece of non-trivial logic. Designed to be deterministic, pure (no DB i
 | Tag exact match (token == tag name) | 4.0       | One hit per token                                                      |
 | Tag substring match                | 1.5        | Capped at one tag per token                                            |
 | Body match                         | 1.0        | Count *unique line* occurrences (not raw `substr_count`)               |
-| Recency tiebreak                   | +0.001/day | Days-since-epoch on `updated_at`; never strong enough to flip ranking |
+| Recency tiebreak                   | +0.000001/day | Days-since-epoch on `updated_at` × 0.000001 — max contribution ~0.02 in 2026, well below the smallest real score (1.0 body match) |
 
 5. **Sort by score DESC**, truncate to `limit`.
 
@@ -173,7 +173,7 @@ The only piece of non-trivial logic. Designed to be deterministic, pure (no DB i
 - **Filter then rank** keeps SQL boring and PHP testable. The ranker is `function rank(array $candidates, array $tokens): array`.
 - **Whole-word title bonus** addresses the common ranking complaint where partial matches outrank exact ones.
 - **Unique-line counting** prevents a single 200-line file from dominating just because its match line appears in a long file. Naive `substr_count` fails the obvious test ("200 identical lines should not score 200× a single line").
-- **Recency tiebreak as +0.001/day** keeps the sort one-stage and trivially testable.
+- **Recency tiebreak as +0.000001/day** keeps the sort one-stage and trivially testable.
 
 ### Test surface (the TDD playground)
 

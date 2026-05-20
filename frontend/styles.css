@@ -12,3 +12,6 @@ header { display: flex; align-items: center; justify-content: space-between; }
 .modal-content label { display: block; margin-top: .75rem; font-weight: 600; }
 .modal-actions { display: flex; gap: .5rem; justify-content: flex-end; margin-top: 1rem; }
 pre code { display: block; padding: .5rem; background: #f6f8fa; border-radius: 4px; overflow-x: auto; }
+.tag-active { background: #99b; color: #fff; font-weight: 600; }
+.snippet-actions { display: flex; gap: .5rem; margin-top: .75rem; }
+.snippet-actions button { padding: .3rem .6rem; cursor: pointer; }
