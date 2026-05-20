@@ -9,7 +9,7 @@ test-backend:
 	cd backend && composer test
 
 test-frontend:
-	cd frontend && node --test tests/
+	@if [ -d frontend/tests ]; then cd frontend && node --test tests/; else echo "(skip) no frontend/tests yet"; fi
 
 clean:
 	rm -f backend/data/*.sqlite backend/data/*.sqlite-journal

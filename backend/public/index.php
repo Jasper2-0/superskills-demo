@@ -2,19 +2,19 @@
 declare(strict_types=1);
 
 // Static-file fallthrough: PHP's built-in dev server handles non-API paths.
-$path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?? '/';
+$path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
 if (!str_starts_with($path, '/api/')) {
     $docRoot = __DIR__;
     $candidate = $docRoot . $path;
     if ($path !== '/' && is_file($candidate)) {
         return false; // let PHP serve the static file
     }
-    // Default: serve the SPA shell.
-    $frontendRoot = dirname(__DIR__, 2) . '/frontend';
-    $requested = $path === '/' ? '/index.html' : $path;
-    $candidate = $frontendRoot . $requested;
-    if (is_file($candidate)) {
-        $mime = match (pathinfo($candidate, PATHINFO_EXTENSION)) {
+    // Default: serve the SPA shell (path-traversal-safe via realpath check).
+    $frontendRoot = realpath(dirname(__DIR__, 2) . '/frontend');
+    $requested    = $path === '/' ? '/index.html' : $path;
+    $resolved     = $frontendRoot !== false ? realpath($frontendRoot . $requested) : false;
+    if ($resolved !== false && str_starts_with($resolved, $frontendRoot . DIRECTORY_SEPARATOR)) {
+        $mime = match (pathinfo($resolved, PATHINFO_EXTENSION)) {
             'html' => 'text/html; charset=utf-8',
             'css'  => 'text/css; charset=utf-8',
             'js'   => 'application/javascript; charset=utf-8',
@@ -22,7 +22,7 @@ if (!str_starts_with($path, '/api/')) {
             default => 'text/plain',
         };
         header('Content-Type: ' . $mime);
-        readfile($candidate);
+        readfile($resolved);
         return true;
     }
     http_response_code(404);
