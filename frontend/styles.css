@@ -1,0 +1,14 @@
+body { font-family: system-ui, sans-serif; max-width: 960px; margin: 2rem auto; padding: 0 1rem; }
+header { display: flex; align-items: center; justify-content: space-between; }
+.snippet { border: 1px solid #ddd; border-radius: 6px; padding: 1rem; margin-bottom: 1rem; }
+.snippet h2 { margin: 0 0 .5rem; font-size: 1.1rem; }
+.tags { display: flex; gap: .3rem; flex-wrap: wrap; margin-top: .5rem; }
+.tag { background: #eef; padding: .15rem .5rem; border-radius: 999px; font-size: .8rem; }
+.search-bar { display: flex; gap: .5rem; margin: 1rem 0; }
+.search-bar input, .search-bar select { padding: .4rem; font-size: 1rem; }
+.modal { position: fixed; inset: 0; background: rgba(0,0,0,.4); display: flex; align-items: center; justify-content: center; }
+.modal-content { background: #fff; padding: 1.5rem; border-radius: 8px; min-width: 500px; }
+.modal-content input, .modal-content textarea, .modal-content select { width: 100%; padding: .4rem; margin-top: .25rem; font-size: 1rem; }
+.modal-content label { display: block; margin-top: .75rem; font-weight: 600; }
+.modal-actions { display: flex; gap: .5rem; justify-content: flex-end; margin-top: 1rem; }
+pre code { display: block; padding: .5rem; background: #f6f8fa; border-radius: 4px; overflow-x: auto; }
