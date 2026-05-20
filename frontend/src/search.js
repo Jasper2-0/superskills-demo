@@ -1,4 +1,5 @@
 export function render(container, state, handlers) {
+  const hadInputFocus = document.activeElement?.tagName === 'INPUT';
   container.innerHTML = '';
 
   const bar = document.createElement('div');
@@ -48,7 +49,7 @@ export function render(container, state, handlers) {
   }
 
   // Preserve focus on the input across re-renders
-  if (document.activeElement && document.activeElement.tagName === 'INPUT') {
+  if (hadInputFocus) {
     input.focus();
     input.setSelectionRange(input.value.length, input.value.length);
   }
