@@ -29,7 +29,11 @@ final class SnippetRepository
         ]);
         $id = (int) $this->pdo->lastInsertId();
         $this->syncTags($id, $data['tags']);
-        return $this->findById($id);
+        $result = $this->findById($id);
+        if ($result === null) {
+            throw new \RuntimeException("Snippet $id not found after insert");
+        }
+        return $result;
     }
 
     public function findById(int $id): ?Snippet
@@ -98,7 +102,11 @@ final class SnippetRepository
         ]);
         $this->pdo->prepare('DELETE FROM snippet_tags WHERE snippet_id = :id')->execute(['id' => $id]);
         $this->syncTags($id, $data['tags']);
-        return $this->findById($id);
+        $result = $this->findById($id);
+        if ($result === null) {
+            throw new \RuntimeException("Snippet $id not found");
+        }
+        return $result;
     }
 
     public function delete(int $id): void
@@ -141,7 +149,7 @@ final class SnippetRepository
     {
         $t = microtime(true);
         $sec = (int) $t;
-        $usec = (int) round(($t - $sec) * 1_000_000);
+        $usec = min((int) round(($t - $sec) * 1_000_000), 999_999);
         return gmdate('Y-m-d\TH:i:s', $sec) . sprintf('.%06dZ', $usec);
     }
 }
